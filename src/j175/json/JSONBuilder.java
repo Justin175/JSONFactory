@@ -71,17 +71,16 @@ public class JSONBuilder {
 				
 				//Nachdem der key eingelesen wurde, wird nach einer value gesucht
 				//Suche nach beginn der value mittels ':'
-				System.out.println("Key: " + currentKey + " " + index);
 				
 				while(++index < json.length() && (currentChar = json.charAt(index)) != ':');
 				
-				//Hier können 4 Fälle eintreten:
+				//Hier kï¿½nnen 4 Fï¿½lle eintreten:
 				// 1: String ('"')
 				// 2: Zahl ('[+-[0-9]]')
 				// 3: Array ('[')
 				// 4: JSON ('{')
 				
-				//Suche nach einem Indikator für eine von den vier Fällen
+				//Suche nach einem Indikator fï¿½r eine von den vier Fï¿½llen
 				while(++index < json.length()) {
 					currentChar = json.charAt(index);
 					
@@ -90,7 +89,7 @@ public class JSONBuilder {
 						//Lese den String
 						String value = readString();
 						
-						//Füge neues Attribut hinzu
+						//Fï¿½ge neues Attribut hinzu
 						head.addAttribute(currentKey, value);
 						break;
 					}
@@ -105,7 +104,7 @@ public class JSONBuilder {
 						if(info.failed)
 							throw new ConvertException("'" + info.numberString + "' is not a number.");
 						
-						//Füge neues Attribut hinzu
+						//Fï¿½ge neues Attribut hinzu
 						head.addAttribute(currentKey, info.number);
 						index--;
 						break;
@@ -113,20 +112,8 @@ public class JSONBuilder {
 					
 					//Fall 3: Suche nach '['
 					else if(currentChar == '[') {
-						LinkedList<Object> list = new LinkedList<>();
-						
-						while(++index < json.length()) {
-							currentChar = json.charAt(index);
-							
-							//TODO: HIer weiter machen!!!!!!!
-							
-							if(currentChar == ']') {
-								break;
-							}
-						}
-						
 						//add Attr
-						Object[] arr = list.toArray();
+						Object[] arr = readList(currentKey);
 						head.addAttribute(currentKey, arr);
 						break;
 					}
@@ -148,19 +135,85 @@ public class JSONBuilder {
 				}
 			}
 			
-			//nächstes Key-Value-Paar
+			//nï¿½chstes Key-Value-Paar
 			//-> derzeitigen key auf null setzen
 			else if(currentChar == ',') {
 				currentKey = null;
 			}
 			
-			// schließende Klammer wird gefunde > break
+			// schlieï¿½ende Klammer wird gefunde > break
 			else if(currentChar == '}') {
 				break;
 			}
 		}
 		
 		this.out = head;
+	}
+	
+	private Object[] readList(String currentKey) {
+		LinkedList<Object> list = new LinkedList<>();
+		char currentChar;
+		
+		while(++index < json.length()) {
+			currentChar = json.charAt(index);
+			
+			//Ein Array besteht aus endlich vielen Elementen, welche
+			//jedoch nicht den selben Typen aufweisen mÃ¼ssen
+			//Vier typen existieren.
+			//1. String
+			//2. Zahl
+			//3. JSON-Object (Rekursiver Aufrunf)
+			//4. Array (Rekursiver Aufruf)
+			
+			//Fall 1
+			if(currentChar == '"') {
+				String content = readString();
+				
+				//Add content to list
+				list.add(content);
+			}
+			
+			//Fall 2
+			else if(currentChar == '.' || currentChar == '+' || currentChar == '-' || 
+					(currentChar >= '0' && currentChar <= '9')) {
+				NumberReadInformation info = readNumber();
+				
+				if(info.failed)
+					throw new ConvertException("'" + info.numberString + "' is not a number.");
+				
+				list.add(info.number);
+				this.index--;
+			}
+			
+			//Fall 3
+			else if(currentChar == '{') {
+				JSONBuilder builder = new JSONBuilder(this.json, index);
+				builder.buid();
+				
+				if(!builder.isFailed()) {
+					list.add(builder.getJSON());
+					this.index = builder.index;
+				}
+				else
+					System.err.println("Builder Failed while Building JSON-Object in Array at Key '" + currentKey + "': " + builder.errorMessage);
+			}
+			
+			//Fall 4
+			else if(currentChar == '[') {
+				//read next list
+				Object[] content = readList(currentKey);
+				
+				//Add to list
+				list.add(content);
+			}
+			
+			//end list
+			else if(currentChar == ']') {
+				break;
+			}
+		}
+		
+		return list.toArray();
 	}
 	
 	private String readString() {
@@ -173,7 +226,7 @@ public class JSONBuilder {
 		while(++index < json.length()) {
 			currentChar = json.charAt(index);
 			
-			//überprüfe auf ende
+			//ï¿½berprï¿½fe auf ende
 			if(currentChar == '\\' && !isBackslashBefore) {
 				isBackslashBefore = true;
 				continue;
