@@ -36,27 +36,27 @@ public class JSONObject {
 		return toString(false, 0);
 	}
 	
-	public String toString(boolean lined) {
-		return toString(lined, 1);
+	public String toString(boolean beautified) {
+		return toString(beautified, 1);
 	}
 	
-	private String toString(boolean lined, int col) {
+	private String toString(boolean beautified, int col) {
 		StringBuilder out = new StringBuilder(100);
 		out.append('{');
 		int size = attributes.size();
 		int index = 0;
 		
-		//erstelle einrückung
+		//erstelle einrï¿½ckung
 		String tabs = "";
 		
-		if(lined) {
+		if(beautified) {
 			char[] tabs_arr = new char[col];
 			for(int i = 0; i < col; i++)
 				tabs_arr[i] = '\t';
 			tabs = new String(tabs_arr);
 		}
 		
-		String keyBegin = lined ? "\n" + tabs + "\"" : "\"";
+		String keyBegin = beautified ? "\n" + tabs + "\"" : "\"";
 		
 		for(String key : attributes.keySet()) {
 			out.append(keyBegin);
@@ -70,7 +70,11 @@ public class JSONObject {
 				out.append(value.toString());
 				out.append('"');	
 			}
-			else if(lined && value instanceof JSONObject) {
+			else if(value instanceof Object[]) {
+				Object[] values = (Object[]) value;
+				out.append(arrayToString(values, beautified, col));
+			}
+			else if(beautified && value instanceof JSONObject) {
 				out.append(((JSONObject) value).toString(true, col + 1));
 			}
 			else
@@ -82,12 +86,38 @@ public class JSONObject {
 			index++;
 		}
 		
-		if(lined) {
+		if(beautified) {
 			  out.append('\n');
 			  out.append(tabs.substring(1));
 		}
 		
 		out.append('}');
+		
+		return out.toString();
+	}
+	
+	private String arrayToString(Object[] values, boolean beautified, int col) {
+		StringBuilder out = new StringBuilder(150);
+		out.append('[');
+		for(int i = 0; i < values.length; i++) {
+			if(values[i] instanceof JSONObject && beautified) 
+				out.append(((JSONObject) values[i]).toString(true, col + 1));
+			else if(values[i] instanceof String) {
+				out.append('"');
+				out.append(values[i].toString());
+				out.append('"');
+			}
+			else if(values[i] instanceof Object[]) {
+				out.append(arrayToString((Object[]) values[i], beautified, col)); 
+			}
+			else
+				out.append(values[i]);
+			
+			if(i < values.length - 1)
+				out.append(',');
+		}
+		
+		out.append(']');
 		
 		return out.toString();
 	}
