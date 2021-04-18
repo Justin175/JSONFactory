@@ -70,6 +70,10 @@ public class JSONObject {
 				out.append(value.toString());
 				out.append('"');	
 			}
+			else if(value instanceof Object[]) {
+				Object[] values = (Object[]) value;
+				out.append(arrayToString(values, beautified, col));
+			}
 			else if(beautified && value instanceof JSONObject) {
 				out.append(((JSONObject) value).toString(true, col + 1));
 			}
@@ -88,6 +92,32 @@ public class JSONObject {
 		}
 		
 		out.append('}');
+		
+		return out.toString();
+	}
+	
+	private String arrayToString(Object[] values, boolean beautified, int col) {
+		StringBuilder out = new StringBuilder(150);
+		out.append('[');
+		for(int i = 0; i < values.length; i++) {
+			if(values[i] instanceof JSONObject && beautified) 
+				out.append(((JSONObject) values[i]).toString(true, col + 1));
+			else if(values[i] instanceof String) {
+				out.append('"');
+				out.append(values[i].toString());
+				out.append('"');
+			}
+			else if(values[i] instanceof Object[]) {
+				out.append(arrayToString((Object[]) values[i], beautified, col)); 
+			}
+			else
+				out.append(values[i]);
+			
+			if(i < values.length - 1)
+				out.append(',');
+		}
+		
+		out.append(']');
 		
 		return out.toString();
 	}
